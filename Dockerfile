@@ -1,4 +1,4 @@
-FROM golang:1.21-bullseye as base
+FROM golang:1.25-bookworm as base
 WORKDIR /go/app/base
 
 RUN apt-get update 
@@ -11,7 +11,7 @@ COPY go.sum .
 RUN go mod download
 COPY . .
 
-FROM golang:1.21-bullseye as builder
+FROM golang:1.25-bookworm as builder
 WORKDIR /go/app/builder
 
 COPY --from=base /go/app/base /go/app/builder
