@@ -22,4 +22,5 @@ COPY --from=builder /go/app/builder/main .
 
 EXPOSE 8081
 
+ENV GIN_MODE=release
 CMD ["/go/app/bin/main"]
