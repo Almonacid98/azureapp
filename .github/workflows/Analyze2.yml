@@ -1,5 +1,4 @@
 name: Security Analysis (CodeQL + TruffleHog)
-
 on:
   workflow_dispatch:
 
@@ -21,21 +20,24 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          languages: python, go
+          languages: python,go
 
       - name: Run CodeQL Analysis
         uses: github/codeql-action/analyze@v3
 
-      - name: Install TruffleHog (CLI)
+      - name: Install TruffleHog (binary)
         run: |
-          curl -sL https://github.com/trufflesecurity/trufflehog/releases/latest/download/trufflehog-linux-amd64 -o /usr/local/bin/trufflehog
-          chmod +x /usr/local/bin/trufflehog
+          echo "⬇️ Instalando TruffleHog..."
+          curl -sSL https://github.com/trufflesecurity/trufflehog/releases/latest/download/trufflehog_$(uname -s)_$(uname -m).tar.gz -o trufflehog.tar.gz
+          tar -xzf trufflehog.tar.gz
+          sudo mv trufflehog /usr/local/bin/trufflehog
+          trufflehog --version
 
       - name: Run TruffleHog
         id: trufflehog
         run: |
           echo "🔍 Escaneando el repositorio con TruffleHog..."
-          trufflehog git file://. --only-verified --json > trufflehog-results.json || true
+          ./trufflehog git file://. --only-verified --json > trufflehog-results.json || true
           RESULTS_COUNT=$(jq '. | length' trufflehog-results.json)
           echo "results_count=$RESULTS_COUNT" >> $GITHUB_ENV
 
