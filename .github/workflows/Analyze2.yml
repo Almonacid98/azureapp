@@ -35,17 +35,24 @@ jobs:
           sudo mv trufflehog /usr/local/bin/trufflehog
           trufflehog --version
 
-      - name: Run TruffleHog
+      - name: 🔎 Verificar contenido del repo
+        run: |
+          echo "Carpeta actual: $(pwd)"
+          ls -la
+          echo "Vista previa de secrets.txt (si existe):"
+          cat secrets.txt || echo "❌ No existe secrets.txt"
+
+      - name: Run TruffleHog (modo git)
         id: trufflehog
         run: |
           echo "🔍 Escaneando el repositorio con TruffleHog..."
-          trufflehog git file://. --only-verified --json > trufflehog-results.json || true
+          trufflehog git file://$(pwd) --only-verified=false --json > trufflehog-results.json || true
           RESULTS_COUNT=$(jq '. | length' trufflehog-results.json)
           echo "results_count=$RESULTS_COUNT" >> $GITHUB_ENV
 
           if [ "$RESULTS_COUNT" != "0" ]; then
-            echo "⚠️ Se encontraron $RESULTS_COUNT secretos:"
-            jq '.[] | {path: .path, type: .type, secret: .secret}' trufflehog-results.json
+            echo "⚠️ Se encontraron $RESULTS_COUNT posibles secretos:"
+            jq '.[] | {path: .path, DetectorName: .DetectorName, Raw: .Raw}' trufflehog-results.json
           else
             echo "✅ No se encontraron secretos."
           fi
