@@ -1,28 +1,24 @@
-FROM golang:1.25-bookworm as base
+FROM golang:1.25.3-alpine3.22 AS base
 WORKDIR /go/app/base
 
-RUN apt-get update 
-RUN apt-get install -y build-essential
-RUN apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false
-RUN rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache build-base
 
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
 COPY . .
 
-FROM golang:1.25-bookworm as builder
+FROM golang:1.25.3-alpine3.22 AS builder
 WORKDIR /go/app/builder
 
 COPY --from=base /go/app/base /go/app/builder
 
-RUN CGO_ENABLED=0 go build -o main -ldflags "-s -w"
+RUN CGO_ENABLED=0 GOOS=linux go build -o main -ldflags="-s -w"
 
-FROM gcr.io/distroless/static-debian11 as production
-#FROM golang:1.19-bullseye as production
+FROM gcr.io/distroless/static-debian11 AS production
 WORKDIR /go/app/bin
 
-COPY --from=builder /go/app/builder/main /go/app/bin/main
+COPY --from=builder /go/app/builder/main .
 
 EXPOSE 8081
 
