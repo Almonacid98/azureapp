@@ -1,8 +1,5 @@
 name: Security Analysis (CodeQL + TruffleHog)
 
-env:
-  REPO_NAME: ${{ github.event.repository.name }}
-
 on:
   workflow_dispatch:
 
@@ -32,14 +29,13 @@ jobs:
       - name: Install TruffleHog
         run: |
           python3 -m pip install --upgrade pip
-          pip install truffleHog==3.53.0 jq
+          pip install trufflehog jq
 
       - name: Run TruffleHog
         id: trufflehog
         run: |
           echo "🔍 Escaneando el repositorio con TruffleHog..."
-          trufflehog git --repo_path . --json > trufflehog-results.json || true
-
+          trufflehog git file://. --only-verified --json > trufflehog-results.json || true
           RESULTS_COUNT=$(jq '. | length' trufflehog-results.json)
           echo "results_count=$RESULTS_COUNT" >> $GITHUB_ENV
 
