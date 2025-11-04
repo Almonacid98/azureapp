@@ -26,10 +26,10 @@ jobs:
       - name: Run CodeQL Analysis
         uses: github/codeql-action/analyze@v3
 
-      - name: Install TruffleHog
+      - name: Install TruffleHog (CLI)
         run: |
-          python3 -m pip install --upgrade pip
-          pip install trufflehog jq
+          curl -sL https://github.com/trufflesecurity/trufflehog/releases/latest/download/trufflehog-linux-amd64 -o /usr/local/bin/trufflehog
+          chmod +x /usr/local/bin/trufflehog
 
       - name: Run TruffleHog
         id: trufflehog
