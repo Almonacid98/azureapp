@@ -76,7 +76,7 @@ jobs:
           if [ "$RESULTS_COUNT" -gt 0 ]; then
             echo "⚠️ Se encontraron $RESULTS_COUNT posibles secretos:"
             jq -c '.[]' "$OUT_JSON"
-            # fallar el job si querés (descomentar)
+            # fallar el job si quiero (descomentar)
             # echo "Failing job because secrets were found" && exit 1
           else
             echo "✅ No se encontraron secretos."
