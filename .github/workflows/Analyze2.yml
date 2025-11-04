@@ -27,66 +27,31 @@ jobs:
 
       - name: Install TruffleHog (binary release)
         run: |
+          echo "⬇️ Descargando última versión de TruffleHog..."
           LATEST_URL=$(curl -s https://api.github.com/repos/trufflesecurity/trufflehog/releases/latest | jq -r '.assets[] | select(.name | test("linux_amd64.tar.gz$")) | .browser_download_url')
+          echo "📦 URL del binario: $LATEST_URL"
           curl -L "$LATEST_URL" -o trufflehog.tar.gz
           tar -xzf trufflehog.tar.gz
           sudo mv trufflehog /usr/local/bin/trufflehog
           trufflehog --version
 
-      - name: Debug: listar repo y mostrar preview de secrets.txt
+      - name: Run TruffleHog
+        id: trufflehog
         run: |
-          echo "PWD: $(pwd)"
-          ls -la
-          echo "=== HEAD secrets.txt ==="
-          head -n 50 secrets.txt || echo "❌ No existe secrets.txt"
-
-      - name: Run TruffleHog (modo git, producir JSONL)
-        id: run_trufflehog
-        run: |
-          set -o pipefail
-          OUT_JSONL=trufflehog-raw.jsonl
-          OUT_JSON=trufflehog-results.json
-          OUT_PRETTY=trufflehog-results.txt
-
-          echo "🔍 Escaneando el repo con TruffleHog..."
-          trufflehog git file://$(pwd) --only-verified=false --json > "$OUT_JSONL" || true
-
-          echo "Archivo raw (JSONL) size:"
-          wc -c "$OUT_JSONL" || true
-          echo "Primeros 500 bytes del raw (si existen):"
-          head -c 500 "$OUT_JSONL" || true
-
-          # Si el raw está vacío, crear un JSONL vacío (no obligatorio)
-          if [ ! -s "$OUT_JSONL" ]; then
-            echo "{}" > "$OUT_JSONL"
-          fi
-
-          # Converte JSONL (varias líneas JSON) a un JSON array (compatibilidad)
-          # jq -s lee múltiples objetos y los convierte en un array
-          jq -s '.' "$OUT_JSONL" > "$OUT_JSON" || echo "[]">"$OUT_JSON"
-
-          # Crea una versión legible mostrando path, detector y raw
-          jq -r '.[] | "PATH: \(.path)\nDETECTOR: \(.DetectorName // .detector_name // \"-\")\nRAW: \(.Raw // .raw // \"-\")\n---"' "$OUT_JSON" > "$OUT_PRETTY" || echo "No hay hallazgos" > "$OUT_PRETTY"
-
-          # Contar elementos reales (array length)
-          RESULTS_COUNT=$(jq 'length' "$OUT_JSON" 2>/dev/null || echo 0)
+          echo "🔍 Escaneando el repositorio con TruffleHog..."
+          trufflehog git file://. --only-verified --json > trufflehog-results.json || true
+          RESULTS_COUNT=$(jq '. | length' trufflehog-results.json)
           echo "results_count=$RESULTS_COUNT" >> $GITHUB_ENV
 
-          # Mostrar resumen en logs
-          if [ "$RESULTS_COUNT" -gt 0 ]; then
-            echo "⚠️ Se encontraron $RESULTS_COUNT posibles secretos:"
-            jq -c '.[]' "$OUT_JSON"
-            # fallar el job si quiero (descomentar)
-            # echo "Failing job because secrets were found" && exit 1
+          if [ "$RESULTS_COUNT" != "0" ]; then
+            echo "⚠️ Se encontraron $RESULTS_COUNT secretos:"
+            jq '.[] | {path: .path, type: .type, secret: .secret}' trufflehog-results.json
           else
             echo "✅ No se encontraron secretos."
           fi
 
-      - name: Upload TruffleHog raw + aggregated + pretty results
+      - name: Upload TruffleHog results
         uses: actions/upload-artifact@v4
         with:
           name: trufflehog-report
-          path: |
-            trufflehog-raw.jsonl
-            trufflehog-results.json
-            trufflehog-results.txt
+          path: trufflehog-results.json
