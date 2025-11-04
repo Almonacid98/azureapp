@@ -1,4 +1,4 @@
-name: Security Analysis (CodeQL + TruffleHog)
+name: (CodeQL + TruffleHog)
 on:
   workflow_dispatch:
 
