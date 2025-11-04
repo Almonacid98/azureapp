@@ -9,7 +9,7 @@ func main() {
 	v1 := r.Group("/api/v1")
 	{
 		v1.GET("/hello", func(c *gin.Context) {
-			c.JSON(200, gin.H{"message": "Ok"})
+			c.JSON(200, gin.H{"message": "Hello Azure"})
 		})
 	}
 	r.Run(":8081")

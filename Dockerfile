@@ -24,6 +24,6 @@ WORKDIR /go/app/bin
 
 COPY --from=builder /go/app/builder/main /go/app/bin/main
 
-EXPOSE 8080
+EXPOSE 8081
 
 CMD ["/go/app/bin/main"]
